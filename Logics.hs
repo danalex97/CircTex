@@ -1,6 +1,6 @@
 module Logics where 
 
-import qualified GHC.Real as GR
+import Data.Maybe 
 
 data BinOp 
   = And 
@@ -24,6 +24,8 @@ data Exp
   | BinApp BinOp Exp Exp
   deriving (Eq, Ord)
 
+type Env = [(String, State)]
+
 toState :: (Eq a, Num a) => a -> State
 toState 0 = F
 toState 1 = T
@@ -37,34 +39,84 @@ instance Num Exp where
   abs         = undefined
   signum      = undefined 
 
-infixl 5 ^.
-(^.) :: Exp -> Exp -> Exp
-(^.) = BinApp Xor
+instance Num State where
+  F + F = F
+  T + F = T
+  F + T = T
+  T + T = T
+  
+  _ + U = U 
+  U + _ = U
 
-infixl 5 ^/
-(^/) :: Exp -> Exp -> Exp
-(^/) = BinApp Xnor
+  T * T = T
+  T * F = F
+  F * T = F
+  F * F = F
 
-infixl 5 +/
-(+/) :: Exp -> Exp -> Exp
-(+/) = BinApp Nor
+  _ * U = U
+  U * _ = U 
 
-infixl 5 */ 
-(*/) :: Exp -> Exp -> Exp
-(*/) = BinApp Nand
+  negate      = undefined
+  fromInteger = toState
+  abs         = undefined
+  signum      = undefined  
+ 
+class LogicOp a where
+  (^.) , (^/) , (+/) , (*/)  :: a -> a -> a  
+  (!) :: a -> a
 
--- not -- to add
+instance LogicOp Exp where
+  (^.)  = BinApp Xor
+  (^/)  = BinApp Xnor
+  (+/)  = BinApp Nor
+  (*/)  = BinApp Nand
+  (!) x = Not x
+
+instance LogicOp State where
+  U ^. _ = U 
+  _ ^. U = U
+  T ^. F = T
+  F ^. T = F
+  _ ^. _ = F
+  x ^/ y = (!) ( x ^. y )
+  (!) T  = F
+  (!) F  = T
+  (!) U  = U
+  x +/ y = (!) ( x + y )
+  x */ y = (!) ( x * y )
+
+binApps 
+  = [ (Xor, "^.") 
+    , (Or, "+")
+    , (And, "*")
+    , (Nor, "*/")
+    , (Nand, "+/")
+    , (Xnor, "^/")
+    ]
+
+binFunc 
+  = [ (Xor, (^.) )
+    , (Xnor, (^/) )
+    , (Or, (+) )
+    , (Nor, (+/) )
+    , (And, (*) ) 
+    , (Nand, (*/) )
+    ]
+    
 
 showExp :: Exp -> String
-showExp (UnApp Xor a b)  = " ( " ++ showExp a ++ "^." ++ showExp b  ++ " ) "
-showExp (UnApp Xnor a b) = " ( " ++ showExp a ++ "^/" ++ showExp b  ++ " ) "
-showExp (UnApp Or a b)   = " ( " ++ showExp a ++ "*" ++ showExp b  ++ " ) "
-showExp (UnApp Nor a b)  = " ( " ++ showExp a ++ "*/" ++ showExp b  ++ " ) "
-showExp (UnApp And a b)  = " ( " ++ showExp a ++ "+" ++ showExp b  ++ " ) "
-showExp (UnApp Nand a b) = " ( " ++ showExp a ++ "+/" ++ showExp b  ++ " ) "
-showExp (Val a)          = show a 
-showExp Id               = id
-showExp (Not a)          = showExp a ++ "'"
+showExp (BinApp op a b) = " (" ++ showExp a ++ fromJust ( lookup op binApps ) ++ showExp b  ++ ") "
+showExp (Val a)         = show a 
+showExp (Id a)          = a
+showExp (Not a)         = "(!)" ++ showExp a
 
 instance Show Exp where
-  show = printExp
+  show = showExp
+
+evalExp :: Exp -> Env -> State
+evalExp (BinApp op a b) env = fromJust ( lookup op binFunc ) (evalExp a env) (evalExp b env)
+evalExp (Not a) env         = (!) (evalExp a env)
+evalExp (Id a) env          = fromJust ( lookup a env )
+evalExp (Val a) _           = a 
+ 
+ 
