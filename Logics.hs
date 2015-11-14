@@ -1,6 +1,7 @@
 module Logics where 
 
 import Data.Maybe 
+import Data.List 
 
 data BinOp 
   = And 
@@ -119,4 +120,12 @@ evalExp (Not a) env         = (!) (evalExp a env)
 evalExp (Id a) env          = fromJust ( lookup a env )
 evalExp (Val a) _           = a 
  
+getSub :: Exp -> [Exp]
+-- gets all the subexpression of a logic expression
+getSub (Not exp)
+  = nub ( Not exp : getSub exp )
+getSub exp@(BinApp op e1 e2)
+  = nub ( exp : getSub e1 ++ getSub e2 )
+getSub x
+  = [x]
  

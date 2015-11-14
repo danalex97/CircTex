@@ -41,14 +41,37 @@ getMinterms exp
   where 
     trueEnvs = filter (\x -> evalExp exp x == T) envs
     envs     = getEnvs exp
+ 
+expMinterms :: Exp -> [Exp]
+-- transforms the minterms in exps
+expMinterms exp
+  = map ( foldl1 (*) ) minTerms
+  where 
+    minTerms = getMinterms exp
 
 simpleDNF :: Exp -> Exp
 -- gets a left associative DNF
 simpleDNF exp
-  = foldl1 (+) $ map ( foldl1 (*) ) minTerms
-  where 
-    minTerms = getMinterms exp
+  = foldl1 (+) ( expMinterms exp ) 
 
-eachTwoWith :: Exp -> ( Exp -> Exp -> Exp ) -> Exp
--- groups a set of MinTerms at half with respect to an operation
-eachTwoWith = undefined
+eachTwoWith :: [Exp] -> ( Exp -> Exp -> Exp ) -> Exp
+-- groups a set of expessions at half with respect to an operation
+eachTwoWith exps op 
+  = case l of
+      1 -> exp
+        where 
+          [exp] = exps
+      2 -> op e1 e2
+        where 
+          [e1, e2] = exps
+      _ -> op (eachTwoWith lt op) (eachTwoWith rt op)
+        where
+          (lt, rt) = splitAt (l `div` 2) exps
+  where
+    l = length exps
+
+eachTwoDNF :: Exp -> Exp
+eachTwoDNF exp
+  = eachTwoWith expTerms (+)  
+  where 
+    expTerms = expMinterms exp 
