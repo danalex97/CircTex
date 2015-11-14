@@ -23,7 +23,19 @@ data Exp
   | Id String
   | Not Exp
   | BinApp BinOp Exp Exp
-  deriving (Eq, Ord)
+  deriving (Eq)
+
+depth :: Exp -> Int
+depth exp 
+  = case exp of 
+      Val _ -> 0
+      Id  _ -> 1
+      Not e -> depth e + 1
+      BinApp op e1 e2 -> max (depth e1) (depth e2) + 1
+
+instance Ord Exp where
+  x < y  = depth x < depth y
+  x <= y = depth x <= depth y
 
 type Env = [(String, State)]
 
@@ -119,7 +131,7 @@ evalExp (BinApp op a b) env = fromJust ( lookup op binFunc ) (evalExp a env) (ev
 evalExp (Not a) env         = (!) (evalExp a env)
 evalExp (Id a) env          = fromJust ( lookup a env )
 evalExp (Val a) _           = a 
- 
+	
 getSub :: Exp -> [Exp]
 -- gets all the subexpression of a logic expression
 getSub (Not exp)

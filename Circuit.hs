@@ -24,7 +24,7 @@ type GateInfo
   = (
       GateType , 
       (Maybe Int) , -- layer 
-      (Maybe Int) , -- line
+      (Maybe Float) , -- line
       (Maybe String) , -- input1
       (Maybe String)   -- input2
     )
@@ -90,7 +90,7 @@ addInputs :: Gate -> Maybe String -> Maybe String -> Maybe Int -> Gate
 addInputs ( s , (t,x,y,i1,i2) ) ni1 ni2 nx
   =  ( s , (t,nx,y,ni1,ni2) )
 
-addLine :: Gate -> Maybe Int -> Gate
+addLine :: Gate -> Maybe Float -> Gate
 addLine ( s , (t,x,y,i1,i2) ) ny
   =  ( s , (t,x,ny,i1,i2) )
     
@@ -103,6 +103,10 @@ instance Integral a => Num (Maybe a) where
 
 getLayer :: Gate -> Maybe Int
 getLayer ( _ , (_,x,_,_,_) )
+  = x
+  
+getGateType :: Gate -> GateType
+getGateType ( _ , (x,_,_,_,_) )
   = x
     
 getInputs :: [(Exp, Gate)] -> [(Exp, Gate)] -> [(Exp, Gate)]
@@ -128,7 +132,7 @@ getInputs (l:lst) sn
               l1          = getLayer a1
           ---------
           _               -> (exp, addInputs gate Nothing Nothing (Just 1))
-    lst' = lst ++ sn 
+    lst' = (l:lst) ++ sn 
     
 getLines :: [(Exp, Gate)] -> [(Exp, Gate)]
 getLines allList
@@ -136,7 +140,7 @@ getLines allList
   where
     newLst 
     -- the new processed list
-      = zipWith addLine lst ( Just <$> ys )
+      = zipWith addLine lst ( Just <$> map fromIntegral ys )
     (exps, lst)
       = unzip allList
     ys         
@@ -145,8 +149,20 @@ getLines allList
     solve x ls 
     -- helper function that counts the values on the same layer
       = length ( filter (\y -> getLayer x == getLayer y ) ls ) + 1
+
+widenCircuit :: [Gate] -> [Gate]
+widenCircuit gates 
+  = map (\g -> changeLayer g ( fromIntegral layers - gLayer g ) ) gates
+  where
+    gLayer :: Gate -> Float
+    gLayer g
+      = ( fromIntegral . fromJust ) (getLayer g) 
+    layers  
+      = ( fromJust . maximum) (map getLayer gates)
+    changeLayer ( s , (t,x,Just y,i1,i2) ) times
+      = ( s , (t,Just( fromJust x* 2),Just ((-5) + y * (times+1) * 0.5),i1,i2) )
     
 getCircuit :: Exp -> [Gate]
 -- gets the information of the circuit out of an expression
-getCircuit exp = ( snd . unzip . getLines ) $ getInputs ( mapGates exp ) []
+getCircuit exp = ( snd . unzip . getLines ) $ getInputs ( mapGates . eachTwoDNF $ exp ) []
 
