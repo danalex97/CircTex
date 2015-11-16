@@ -32,7 +32,7 @@ drawMap
     , (S, "\\node")
     ]
 
-drawGate :: Int -> Gate -> [String]
+drawGate :: Float -> Gate -> [String]
 drawGate h (name, info)
   = [ fromJust (lookup t drawMap) 
     , " at (" ++ xx ++ ", " ++ yy ++ ") "
@@ -57,7 +57,7 @@ drawGate h (name, info)
             , " (" ++ name ++ ".input); \n" 
             ]
     (xx, yy)
-      | t == S    = (show (y * 0.2), show ( 0.8 * fromIntegral h + 2 ) )
+      | t == S    = (show (y * 0.2), show ( 0.8 * h + 2 ) )
       | otherwise = (show x, show y)
 
 drawConnection :: String -> (String, GateType) -> Int -> String 
