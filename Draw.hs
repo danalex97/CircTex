@@ -2,7 +2,12 @@ module Draw where
 
 import Circuit
 import Logics
+
 import Data.Maybe
+
+import Control.Applicative
+
+--import System.Texrunner
 
 top :: [String]
 top 
@@ -102,3 +107,6 @@ writeCircuit exp
   = writeFile "aux.tex" str
   where 
     str = (drawCircuit . widenCircuit . getCircuit) exp
+    
+main = read <$> getLine >>= writeCircuit
+

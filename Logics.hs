@@ -16,7 +16,7 @@ data State
   = T
   | F 
   | U
-  deriving (Eq, Ord, Show)
+  deriving (Eq, Ord, Show, Read)
 
 data Exp 
   = Val State
@@ -140,4 +140,25 @@ getSub exp@(BinApp op e1 e2)
   = nub ( exp : getSub e1 ++ getSub e2 )
 getSub x
   = [x]
- 
+
+instance Read Exp where
+-- implemented for testing purposes  
+  readsPrec d s 
+    =  [ (Val x, u)  
+       | ("Val", t) <- lex s 
+       , (x, u)     <- reads t 
+       ]
+    
+       ++ 
+       [ (Id x, u)   
+       | ("Id", t) <- lex s
+       , (x,u)     <- reads t 
+       ] 
+   
+       ++
+       [ (Not x, u)  
+       | ("!", t) <- lex s           
+       , (x,u)    <- readsPrec (appPrec+1) t
+       ]
+    where 
+      appPrec = 10
