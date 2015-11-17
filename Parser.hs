@@ -6,7 +6,6 @@ import Logics
 
 -- to install: cabal install parsec 
 
-import Control.Applicative ((<*))
 import Text.Parsec
 import Text.Parsec.String
 import Text.Parsec.Expr
