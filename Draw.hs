@@ -107,6 +107,4 @@ writeCircuit exp
   = writeFile "aux.tex" str
   where 
     str = (drawCircuit . widenCircuit . getCircuit) exp
-    
-main = read <$> getLine >>= writeCircuit
 
