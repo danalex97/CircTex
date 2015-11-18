@@ -2,6 +2,7 @@ module Draw where
 
 import Circuit
 import Logics
+import Format
 
 import Data.Maybe
 
@@ -37,8 +38,8 @@ drawMap
     , (S, "\\node")
     ]
 
-drawGate :: Float -> Gate -> [String]
-drawGate h (name, info)
+drawGate :: Gate -> [String]
+drawGate (name, info)
   = [ fromJust (lookup t drawMap) 
     , " at (" ++ xx ++ ", " ++ yy ++ ") "
     , "(" ++ name ++ ") " 
@@ -61,9 +62,7 @@ drawGate h (name, info)
             , "node[branch] {} -| "
             , " (" ++ name ++ ".input); \n" 
             ]
-    (xx, yy)
-      | t == S    = (show (y * 0.2), show ( 0.8 * h + 2 ) )
-      | otherwise = (show x, show y)
+    (xx, yy) = (show x, show y)
 
 drawConnection :: String -> (String, GateType) -> Int -> String 
 drawConnection name (i1,t1) input
@@ -89,9 +88,8 @@ drawCircuit gates
   = concat all
   where
     all         = top ++ drawnGates ++ connections ++ bottom
-    drawnGates  = concat ( map (drawGate h) gates )
+    drawnGates  = concat ( map drawGate gates )
     bigGates    = filter (\gt -> getGateType gt /= S && getGateType gt /= I ) gates
-    h           = ( fromJust . maximum ) ( map getLayer gates )
     
     connections = concat ( map buildConn bigGates )
       where
@@ -106,5 +104,5 @@ writeCircuit :: Exp -> IO ()
 writeCircuit exp 
   = writeFile "aux.tex" str
   where 
-    str = (drawCircuit . widenCircuit . getCircuit) exp
+    str = (drawCircuit . formatCircuit . getCircuit) exp
 

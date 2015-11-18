@@ -122,8 +122,8 @@ addLine :: Gate -> Maybe Float -> Gate
 addLine ( s , (t,x,y,i1,i2) ) ny
   =  ( s , (t,x,ny,i1,i2) )
 
-getLayer :: Gate -> Maybe Float
-getLayer ( _ , (_,x,_,_,_) )
+getMLayer :: Gate -> Maybe Float
+getMLayer ( _ , (_,x,_,_,_) )
   = x
   
 getGateType :: Gate -> GateType
@@ -149,14 +149,14 @@ getInputs (l:lst) sn
               
               j1 = Just g1
               j2 = Just g2
-              l1 = getLayer a1
-              l2 = getLayer a2
+              l1 = getMLayer a1
+              l2 = getMLayer a2
           ---------
           Not e1 -> (exp, addInputs gate j1 Nothing l1)
             where
               a1@(g1, i1) = fromJust ( lookup e1 lst' )
               
-              l1 = getLayer a1 + Just 1
+              l1 = getMLayer a1 + Just 1
               j1 = Just g1        
           ---------
           _  -> (exp, addInputs gate Nothing Nothing (Just 1))
@@ -178,24 +178,8 @@ getLines allList
       = map (\x -> solve x ( takeWhile (/=x) lst ) ) lst 
     solve x ls 
     -- helper function that counts the values on the same layer
-      = length ( filter (\y -> getLayer x == getLayer y ) ls ) + 1
+      = length ( filter (\y -> getMLayer x == getMLayer y ) ls ) + 1
 
-widenCircuit :: [Gate] -> [Gate]
--- widens the circuit with constant 0.5
-widenCircuit gates 
-  = map (\g -> changeLayer g ( layers - gLayer g ) ) gates
-  where
-    gLayer :: Gate -> Float
-    gLayer g
-      = ( fromJust . getLayer ) g 
-    layers  
-      = ( fromJust . maximum ) ( map getLayer gates )
-    changeLayer ( s , (t,x,y,i1,i2) ) times
-      = ( s , (t,nx,ny,i1,i2) )
-      where
-        nx = x * Just 2
-        ny = y * Just (times+1) * Just 0.5 - Just 5
-    
 getCircuit :: Exp -> [Gate]
 -- gets the information of the circuit out of an expression
 getCircuit exp = ( snd . unzip . getLines ) mapExpGates
