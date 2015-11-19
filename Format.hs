@@ -7,8 +7,9 @@ import Logics
 import Circuit hiding (addLine)
 
 import Data.Maybe
-import Data.List ((\\))
+import Data.List ((\\), sort)
 import Prelude hiding (getLine)
+import Debug.Trace (trace) 
 
 ------------------------------------------------------------------------
 ------------------------------------------------------------------------
@@ -82,6 +83,45 @@ moveSourcesBy gates height
     width  = ( fromIntegral $ ( length l - 1 ) ) * ct
     
     ct = 0.5
+    
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+
+alterLayerBy :: [Gate] -> Float -> [Gate]
+alterLayerBy [] _
+  = [] 
+alterLayerBy [gate] _
+  = [gate]
+alterLayerBy (gate:gates) ct
+  = ( assLayer gate (pl + ct) ) : nextGates
+  where
+    pl        = (getLayer . head) nextGates
+    nextGates = alterLayerBy gates ct
+
+alterLayersBy :: [Gate] -> Float -> Float -> [Gate]
+-- also alters the sorting !
+alterLayersBy [] _ _  
+  = []
+alterLayersBy gates spaceLayers spaceGates
+  = fst ++ foldl process [] layers
+  where
+    process :: [Gate] -> [Gate] -> [Gate]
+    process acc layer
+      = ( alterLayerBy layer' spaceGates ) ++ acc
+      -- = layer' ++ acc
+      where 
+        layer' = i ++ [l']
+        
+        i  = init layer 
+        l  = last layer
+        l' = assLayer l (rightmost + spaceLayers)  
+        
+        rightmost
+          | null acc  = 0
+          | otherwise = (getLayer . head) acc
+      
+    (fst : layers) = map (\x -> filter ( (== x) . getLayer ) gates ) [1..nrLayers]
+    nrLayers       = maximum ( map getLayer gates )  
   
 ------------------------------------------------------------------------
 ------------------------------------------------------------------------
@@ -97,7 +137,15 @@ moveSources :: [Gate] -> [Gate]
 moveSources gates 
   = moveSourcesBy gates 0
 
+alterLayers :: [Gate] -> [Gate]
+alterLayers gates 
+  = alterLayersBy gates 2 1
+
 formatCircuit :: [Gate] -> [Gate]
-formatCircuit = widthCircuit 
-              . moveSources 
-              . highCircuit
+formatCircuit = moveSources 
+             . alterLayers 
+             . highCircuit
+
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+
