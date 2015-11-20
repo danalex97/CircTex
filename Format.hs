@@ -128,7 +128,7 @@ alterLayersBy gates spaceLayers spaceGates
 
 highCircuit :: [Gate] -> [Gate]
 highCircuit gates 
-  = highCircuitBy gates 0.5
+  = highCircuitBy gates 5
   
 widthCircuit gates 
   = widthCircuitBy gates 2
@@ -145,6 +145,8 @@ formatCircuit :: [Gate] -> [Gate]
 formatCircuit = moveSources 
              . alterLayers 
              . highCircuit
+
+-- assign each circuit an unique line and find a way to shuffle them
 
 ------------------------------------------------------------------------
 ------------------------------------------------------------------------
