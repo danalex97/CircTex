@@ -1,7 +1,59 @@
 module Logics where 
 
+-------------------Propositional Logic Module---------------------------
+------------------------------------------------------------------------
+
 import Data.Maybe 
 import Data.List 
+
+-----------------------Typeclass Definititions--------------------------
+------------------------------------------------------------------------
+
+-- Logic operators in list "binApps" above.
+-- Unary logic operator not - noatation !
+
+-- Overloading Num typeclass for And and Or operators.
+-- (+) , (*) :: a -> a -> a  
+
+class LogicOp a where
+  (^.) , (^/) , (+/) , (*/)  :: a -> a -> a  
+  (!) :: a -> a
+
+------------------------Binary Applicators------------------------------
+------------------------------------------------------------------------
+
+binApps 
+  = [ (Xor, "^.") 
+    , (Or, "+")
+    , (And, "*")
+    , (Nor, "*/")
+    , (Nand, "+/")
+    , (Xnor, "^/")
+    ]
+
+binFunc 
+  = [ (Xor, (^.) )
+    , (Xnor, (^/) )
+    , (Or, (+) )
+    , (Nor, (+/) )
+    , (And, (*) ) 
+    , (Nand, (*/) )
+    ]
+    
+------------------------Class Definitions-------------------------------
+------------------------------------------------------------------------
+
+-- Operations on States are defined for logic expression evaluation.
+-- Associativity is left by default.
+ 
+data State 
+  = T -- true
+  | F -- false
+  | U -- undefined
+  deriving (Eq, Ord, Show, Read)
+
+-- !! Warning: For internal evaluation(eg. Ghci) paranthesis are used.
+-- !! Operator precedence is implemented in "Praser.hs".
 
 data BinOp 
   = And 
@@ -12,11 +64,8 @@ data BinOp
   | Xnor
   deriving (Eq, Ord, Show)
 
-data State 
-  = T
-  | F 
-  | U
-  deriving (Eq, Ord, Show, Read)
+-- Expressions are of the types mentioned above, therefore printing 
+-- methods will add paranthesis. Instantiation to eval is defined above.
 
 data Exp 
   = Val State
@@ -25,32 +74,13 @@ data Exp
   | BinApp BinOp Exp Exp
   deriving (Eq)
 
-depth :: Exp -> Int
-depth exp 
-  = case exp of 
-      Val _ -> 0
-      Id  _ -> 1
-      Not e -> depth e + 1
-      BinApp op e1 e2 -> max (depth e1) (depth e2) + 1
-
-instance Ord Exp where
-  x < y  = depth x < depth y
-  x <= y = depth x <= depth y
-
-type Env = [(String, State)]
+----------------------State Class Instatiation--------------------------
+------------------------------------------------------------------------
 
 toState :: (Eq a, Num a) => a -> State
 toState 0 = F
 toState 1 = T
 toState _ = U
-
-instance Num Exp where 
-  (+)         = BinApp Or
-  (*)         = BinApp And
-  negate      = Not
-  fromInteger = Val . toState
-  abs         = undefined
-  signum      = undefined 
 
 instance Num State where
   F + F = F
@@ -73,17 +103,6 @@ instance Num State where
   fromInteger = toState
   abs         = undefined
   signum      = undefined  
- 
-class LogicOp a where
-  (^.) , (^/) , (+/) , (*/)  :: a -> a -> a  
-  (!) :: a -> a
-
-instance LogicOp Exp where
-  (^.)  = BinApp Xor
-  (^/)  = BinApp Xnor
-  (+/)  = BinApp Nor
-  (*/)  = BinApp Nand
-  (!) x = Not x
 
 instance LogicOp State where
   U ^. _ = U 
@@ -98,40 +117,66 @@ instance LogicOp State where
   x +/ y = (!) ( x + y )
   x */ y = (!) ( x * y )
 
-binApps 
-  = [ (Xor, "^.") 
-    , (Or, "+")
-    , (And, "*")
-    , (Nor, "*/")
-    , (Nand, "+/")
-    , (Xnor, "^/")
-    ]
+--------------------Expression Class Instatiation-----------------------
+------------------------------------------------------------------------
 
-binFunc 
-  = [ (Xor, (^.) )
-    , (Xnor, (^/) )
-    , (Or, (+) )
-    , (Nor, (+/) )
-    , (And, (*) ) 
-    , (Nand, (*/) )
-    ]
-    
+depth :: Exp -> Int
+depth exp 
+  = case exp of 
+      Val    _        -> 0
+      Id     _        -> 1
+      Not    e        -> depth e + 1
+      BinApp op e1 e2 -> max (depth e1) (depth e2) + 1
+
+instance Ord Exp where
+  x < y  = depth x < depth y
+  x <= y = depth x <= depth y
+
+instance Num Exp where 
+  (+)         = BinApp Or
+  (*)         = BinApp And
+  negate      = Not
+  fromInteger = Val . toState
+  abs         = undefined
+  signum      = undefined 
+ 
+instance LogicOp Exp where
+  (^.)  = BinApp Xor
+  (^/)  = BinApp Xnor
+  (+/)  = BinApp Nor
+  (*/)  = BinApp Nand
+  (!) x = Not x
 
 showExp :: Exp -> String
-showExp (BinApp op a b) = " (" ++ showExp a ++ fromJust ( lookup op binApps ) ++ showExp b  ++ ") "
-showExp (Val a)         = show a 
-showExp (Id a)          = a
-showExp (Not a)         = "(!)" ++ showExp a
+showExp (BinApp op a b) 
+  = " (" ++ showExp a ++ showOp ++ showExp b  ++ ") "
+  where
+    showOp = fromJust ( lookup op binApps ) 
+showExp (Val a)
+  = show a 
+showExp (Id a)
+  = a
+showExp (Not a)
+  = "(!)" ++ showExp a
 
 instance Show Exp where
   show = showExp
 
+----------------------Expression Class Functions -----------------------
+------------------------------------------------------------------------
+    
+type Env = [(String, State)]
+
 evalExp :: Exp -> Env -> State
-evalExp (BinApp op a b) env = fromJust ( lookup op binFunc ) (evalExp a env) (evalExp b env)
-evalExp (Not a) env         = (!) (evalExp a env)
-evalExp (Id a) env          = fromJust ( lookup a env )
-evalExp (Val a) _           = a 
-	
+evalExp (BinApp op a b) env 
+  = fromJust ( lookup op binFunc ) (evalExp a env) (evalExp b env)
+evalExp (Not a) env
+  = (!) (evalExp a env)
+evalExp (Id a) env
+  = fromJust ( lookup a env )
+evalExp (Val a) _ 
+  = a 
+
 getSub :: Exp -> [Exp]
 -- gets all the subexpression of a logic expression
 getSub (Not exp)
@@ -140,9 +185,11 @@ getSub exp@(BinApp op e1 e2)
   = nub ( exp : getSub e1 ++ getSub e2 )
 getSub x
   = [x]
+  
+-------------------------Debugging Tools--------------------------------
+------------------------------------------------------------------------
 
 instance Read Exp where
--- implemented for testing purposes  
   readsPrec d s 
     =  [ (Val x, u)  
        | ("Val", t) <- lex s 
