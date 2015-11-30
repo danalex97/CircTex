@@ -1,5 +1,10 @@
 module Draw where
 
+--------------------------Drawing Module--------------------------------
+------------------------------------------------------------------------
+
+-- Converts circuit to text file.
+
 import Circuit
 import Logics
 import Format
@@ -8,15 +13,18 @@ import Data.Maybe
 
 import Control.Applicative
 
---import System.Texrunner
+--------------------Tex Settings and Gate Mappings----------------------
+------------------------------------------------------------------------
 
 top :: [String]
 top 
   = [ "\\documentclass[border=3mm]{standalone} \n" 
     , "\\usepackage{tikz} \n" 
-    , "\\usetikzlibrary{arrows,shapes.gates.logic.US,shapes.gates.logic.IEC,calc} \n" 
+    , "\\usetikzlibrary{arrows,shapes.gates.logic.US,"
+    , "shapes.gates.logic.IEC,calc} \n" 
     , "\\begin{document} \n" 
-    , "\\tikzstyle{branch}=[fill,shape=circle,minimum size=3pt,inner sep=0pt] \n" 
+    , "\\tikzstyle{branch}="
+    , "[fill,shape=circle,minimum size=3pt,inner sep=0pt] \n" 
     , "\\begin{tikzpicture}[label distance=2mm] \n"
     ]
 
@@ -34,9 +42,12 @@ drawMap
     , (Na, "\\node[nand gate US, draw, logic gate inputs=nn]") 
     , (No, "\\node[nor gate US, draw, logic gate inputs=nn]") 
     , (Xn, "\\node[xnor gate US, draw, logic gate inputs=nn]") 
-    , (I, "\\node[not gate US, draw]")
-    , (S, "\\node")
+    , (I,  "\\node[not gate US, draw]")
+    , (S,  "\\node")
     ]
+    
+--------------------------Helper Functions------------------------------
+------------------------------------------------------------------------
 
 drawGate :: Gate -> [String]
 drawGate (name, info)
@@ -53,13 +64,8 @@ drawGate (name, info)
     inverterConn 
       | t /= I    = []
       | otherwise 
-          = [ "\\path (" ++ fromJust i1 ++ ") " 
-            , " -- coordinate (punt" ++ fromJust i1 ++ ") " 
-            , " (" ++ fromJust i1 ++ " |- " ++ name ++ ".input); \n" 
-            ]
-            ++
-            [ "\\draw (punt" ++ fromJust i1 ++ ") "
-            , "node[branch] {} -| "
+          = [ "\\draw (" ++ fromJust i1 ++ ") "
+            , "|- "
             , " (" ++ name ++ ".input); \n" 
             ]
     (xx, yy) = (show x, show y)
@@ -82,14 +88,22 @@ drawConnections (name, info) t1 t2
     ]
   where
     (t, _, _,Just i1,Just i2) = info
+    
+---------------------------Main Functions-------------------------------
+------------------------------------------------------------------------
 
 drawCircuit :: [Gate] -> String
+-- Main function - generates the output text
 drawCircuit gates
   = concat all
   where
-    all         = top ++ drawnGates ++ connections ++ bottom
-    drawnGates  = concat ( map drawGate gates )
-    bigGates    = filter (\gt -> getGateType gt /= S && getGateType gt /= I ) gates
+    all        = top ++ drawnGates ++ connections ++ bottom
+    drawnGates = concat ( map drawGate gates )
+    bigGates   = filter hasBinInput gates 
+      where
+        hasBinInput gt 
+          =  getGateType gt /= S 
+          && getGateType gt /= I
     
     connections = concat ( map buildConn bigGates )
       where
@@ -100,9 +114,10 @@ drawCircuit gates
             takeGate name
               = getGateType $ (name, fromJust ( lookup name gates ) )
               
-writeCircuit :: Exp -> IO ()          
+              
+writeCircuit :: Exp -> IO ()        
+-- Returns IO action for writting in the auxiliary Tex file.
 writeCircuit exp 
   = writeFile "aux.tex" str
   where 
     str = (drawCircuit . formatCircuit . getCircuit) exp
-
