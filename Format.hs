@@ -1,18 +1,25 @@
 module Format where
 
+--------------------------Formating Module------------------------------
 ------------------------------------------------------------------------
-------------------------------------------------------------------------
+
+-- Uses random for assigning the different lines.
+-- Install: cabal install random
 
 import Logics
-import Circuit hiding (addLine)
+import Circuit     hiding (addLine)
 
 import Data.Maybe
-import Data.List ((\\), sort)
-import Prelude hiding (getLine)
-import Debug.Trace (trace) 
+import Data.List
+import Prelude     hiding (getLine)
+import Debug.Trace        (trace) 
 
+import System.Random
+
+----------Helper function for gate coordinate manipulation--------------
 ------------------------------------------------------------------------
-------------------------------------------------------------------------
+
+-- (Line, Layer) will be the tuple used as coordinates in Tex file.
 
 getMLine :: Gate -> Maybe Float
 getMLine ( _ , (_,_,y,_,_) )
@@ -51,9 +58,29 @@ addLine g c
 addLayer :: Gate -> Float -> Gate
 addLayer g c
   = assLayer g ( getLayer g + c )
+  
+--------------------Randomized helper functions-------------------------
+------------------------------------------------------------------------
 
+randPermBy :: StdGen -> [a] -> [a]
+randPermBy _ []   
+  = []
+randPermBy gen xs 
+  = front : randPermBy newGen (take n xs ++ drop (n+1) xs)
+  where
+    (n,newGen) = randomR (0, length xs -1) gen
+    front      = xs !! n
+
+randPerm :: [a] -> [a]
+randPerm 
+  = randPermBy (mkStdGen 42)
+
+----------------------Intermal function library-------------------------
 ------------------------------------------------------------------------
-------------------------------------------------------------------------
+
+-- This functions are prototypes for the next section.
+-- All of them receive scalable inputs.
+-- Therefore, the formatting is open to user preferences. 
 
 highCircuitBy :: [Gate] -> Float -> [Gate] 
 highCircuitBy gates c
@@ -67,6 +94,7 @@ widthCircuitBy gates c
   = map ((flip mulLayer) c) gates
 
 moveSourcesBy :: [Gate] -> Float -> [Gate]
+-- Sources will be displayed in upper side of the other gates.
 moveSourcesBy gates height
   = newL ++ newT
   where
@@ -84,8 +112,12 @@ moveSourcesBy gates height
     
     ct = 0.5
     
+----------------------Layer altering functions--------------------------
 ------------------------------------------------------------------------
-------------------------------------------------------------------------
+
+-- Also scalable.
+-- Layer altering make stairlike display for each layer.
+-- For testing removing line altering is recommended.
 
 alterLayerBy :: [Gate] -> Float -> [Gate]
 alterLayerBy [] _
@@ -99,7 +131,7 @@ alterLayerBy (gate:gates) ct
     nextGates = alterLayerBy gates ct
 
 alterLayersBy :: [Gate] -> Float -> Float -> [Gate]
--- also alters the sorting !
+-- Warning : The sorting will be removed!
 alterLayersBy [] _ _  
   = []
 alterLayersBy gates spaceLayers spaceGates
@@ -108,7 +140,6 @@ alterLayersBy gates spaceLayers spaceGates
     process :: [Gate] -> [Gate] -> [Gate]
     process acc layer
       = ( alterLayerBy layer' spaceGates ) ++ acc
-      -- = layer' ++ acc
       where 
         layer' = i ++ [l']
         
@@ -120,11 +151,14 @@ alterLayersBy gates spaceLayers spaceGates
           | null acc  = 0
           | otherwise = (getLayer . head) acc
       
-    (fst : layers) = map (\x -> filter ( (== x) . getLayer ) gates ) [1..nrLayers]
+    (fst : layers) = map filterLayers [1..nrLayers]
+    filterLayers x = filter ( (== x) . getLayer ) gates
     nrLayers       = maximum ( map getLayer gates )  
-  
+
+---------------------------Main functions-------------------------------
 ------------------------------------------------------------------------
-------------------------------------------------------------------------
+
+-- Main functions with given contstants.
 
 highCircuit :: [Gate] -> [Gate]
 highCircuit gates 
@@ -141,13 +175,24 @@ alterLayers :: [Gate] -> [Gate]
 alterLayers gates 
   = alterLayersBy gates 2 1
 
+alterLines :: [Gate] -> [Gate]
+alterLines gates
+  = zipWith assLine gates shuffle 
+  where 
+    n       = length gates
+    shuffle = map fromIntegral ( randPerm [1..n] )
+
+---------------------------Export function------------------------------
+------------------------------------------------------------------------
+
+-- Formats circuit in 4 stages:
+-- * moves sources upside in the upper part of the document
+-- * alter layers with stairlike display
+-- * alter lines based on random line assigment with given seed
+-- * widens the circuit vertically by given constant
+
 formatCircuit :: [Gate] -> [Gate]
 formatCircuit = moveSources 
              . alterLayers 
+             . alterLines
              . highCircuit
-
--- assign each circuit an unique line and find a way to shuffle them
-
-------------------------------------------------------------------------
-------------------------------------------------------------------------
-

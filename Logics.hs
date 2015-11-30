@@ -9,7 +9,7 @@ import Data.List
 -----------------------Typeclass Definititions--------------------------
 ------------------------------------------------------------------------
 
--- Logic operators in list "binApps" above.
+-- Logic operators in list "binApps" below.
 -- Unary logic operator not - noatation !
 
 -- Overloading Num typeclass for And and Or operators.
@@ -64,8 +64,8 @@ data BinOp
   | Xnor
   deriving (Eq, Ord, Show)
 
--- Expressions are of the types mentioned above, therefore printing 
--- methods will add paranthesis. Instantiation to eval is defined above.
+-- Expressions are of the types mentioned below, therefore printing 
+-- methods will add paranthesis. Instantiation to eval is defined below.
 
 data Exp 
   = Val State
@@ -73,6 +73,8 @@ data Exp
   | Not Exp
   | BinApp BinOp Exp Exp
   deriving (Eq)
+  
+type Env = [(String, State)]
 
 ----------------------State Class Instatiation--------------------------
 ------------------------------------------------------------------------
@@ -164,8 +166,6 @@ instance Show Exp where
 
 ----------------------Expression Class Functions -----------------------
 ------------------------------------------------------------------------
-    
-type Env = [(String, State)]
 
 evalExp :: Exp -> Env -> State
 evalExp (BinApp op a b) env 
