@@ -1,5 +1,5 @@
 #!/bin/sh
-apt-get update
+sudo apt-get update
 sudo apt-get install ghci -y
 sudo apt-get install cabal-install -y
 cabal update
