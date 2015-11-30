@@ -34,7 +34,7 @@ Note you can find internal useful functions. Internal libraries are also marked 
 Install
 =======
 
-Download and unzip the file. 
+Download and unzip the files. 
 
 Type following terminal commands:
 
