@@ -1,7 +1,10 @@
 module Circuit where
 
+--------------------Circuit Generation Module---------------------------
 ------------------------------------------------------------------------
-------------------------------------------------------------------------
+
+-- This module implements circuit generation out of expressions.
+-- The circuit will generated in LaTeX in "Draw" module.
 
 import Logics
 import DNF
@@ -12,8 +15,12 @@ import Data.Maybe
 import Control.Applicative
 import Control.Monad
 
+--------------------------Class Definitions-----------------------------
 ------------------------------------------------------------------------
-------------------------------------------------------------------------
+
+-- We defined each gate type with a unique signature.
+-- For binary input gates look in mapGateType.
+-- I stands for invertor and S stands for source.
 
 data GateType 
   = X 
@@ -26,20 +33,27 @@ data GateType
   | S
   deriving (Show, Eq, Ord)
 
+-- We dispose gates in "layers". 
+-- A layer is defined by a nubed row in the logic exp. operation tree. 
+
+-- Note the imput size might be 0,1 or 2. 
+-- !! Warning: The modules do not support 3 or more input gates.
+
 type GateInfo
   = (
       GateType , 
-      (Maybe Float) , -- layer 
-      (Maybe Float) , -- line
+      (Maybe Float) ,  -- layer 
+      (Maybe Float) ,  -- line
       (Maybe String) , -- input1
       (Maybe String)   -- input2
     )
+
+-- A gate comes with a name.
 
 type Gate 
   = ( String , 
       GateInfo
     )
-
 
 mapGateType :: [(BinOp, GateType)]
 mapGateType 
@@ -51,7 +65,7 @@ mapGateType
     , (Nand, Na)
     ] 
    
-------------------------------------------------------------------------
+--------------------------Maybe Helper Instatiation---------------------
 ------------------------------------------------------------------------ 
   
 instance Num a => Num (Maybe a) where
@@ -62,37 +76,59 @@ instance Num a => Num (Maybe a) where
   negate      = fmap negate
   fromInteger = Just . fromInteger
   
+---------------------------Helper functions-----------------------------
 ------------------------------------------------------------------------
-------------------------------------------------------------------------
-   
-    
+
+-- Note some helper functions might be useful in other modules.
+-- Marked with (*).
+
 makeGate :: String -> GateType -> Gate
-makeGate s t = ( s , (t , Nothing, Nothing, Nothing, Nothing) )
+makeGate s t 
+  = ( s , (t , Nothing, Nothing, Nothing, Nothing) )
 
 searchGate :: String -> [Gate] -> Maybe Gate
+-- Finds a gate by id. (*)
 searchGate str gates 
   = lookup str ziped
   where
     ziped = zip (map fst gates) gates
+     
+mapGates :: Exp -> [(Exp, Gate)]
+-- map each expression with a gate (*)
+mapGates exp
+  = zip exps gates
+  where 
+    gates = reverse $ labelGates exps [] 
+    exps  = sortedExps exp
+    
+addInputs :: Gate -> Maybe String -> Maybe String -> Maybe Float -> Gate
+-- assignes the inputs and the layer (*)
+addInputs ( s , (t,x,y,i1,i2) ) ni1 ni2 nx
+  =  ( s , (t,nx,y,ni1,ni2) )
+
+addLine :: Gate -> Maybe Float -> Gate
+-- assignes the line to the gate (*)
+addLine ( s , (t,x,y,i1,i2) ) ny
+  =  ( s , (t,x,ny,i1,i2) )
+
+getMLayer :: Gate -> Maybe Float 
+-- (*)
+getMLayer ( _ , (_,x,_,_,_) )
+  = x
   
+getGateType :: Gate -> GateType
+-- (*)
+getGateType ( _ , (x,_,_,_,_) )
+  = x
+    
 sortedExps :: Exp -> [Exp]
---helper for labelGates
-sortedExps = sort . getSub
- 
-labelGates :: [Exp] -> [Gate] -> [Gate]
--- Pre: exps are sorted
-labelGates [] gates 
-  = gates
-labelGates (e:exps) gates
-  = case e of 
-      BinApp ap _ _ -> labelGates exps ( addGate t gates )
-        where
-          t = fromJust ( lookup ap mapGateType )  
-      Not _         -> labelGates exps ( addGate I gates ) 
-      Id s          -> labelGates exps ( makeGate s S : gates )     
+-- (*)
+-- Instanciation to order is made into Logics module. Do not change it.
+sortedExps 
+  = sort . getSub
  
 addGate :: GateType -> [Gate] -> [Gate]
--- adds a gate of type t to the gate vector
+-- adds a gate of type t to the gate vector (*)
 addGate t gates
   = gate : gates
   where
@@ -103,35 +139,28 @@ addGate t gates
       = head $ dropWhile (\t -> searchGate t gates /= Nothing ) names 
     names    
       = map (tt ++) ( "" : map show [2,3..])
-    
-mapGates :: Exp -> [(Exp, Gate)]
--- map each expression with a gate
-mapGates exp
-  = zip exps gates
-  where 
-    gates = reverse $ labelGates exps [] 
-    exps  = sortedExps exp
-    
-addInputs :: Gate -> Maybe String -> Maybe String -> Maybe Float -> Gate
--- assignes the inputs and the layer
-addInputs ( s , (t,x,y,i1,i2) ) ni1 ni2 nx
-  =  ( s , (t,nx,y,ni1,ni2) )
 
-addLine :: Gate -> Maybe Float -> Gate
--- assignes the line to the gate
-addLine ( s , (t,x,y,i1,i2) ) ny
-  =  ( s , (t,x,ny,i1,i2) )
+-------------------------Main function library--------------------------
+------------------------------------------------------------------------
 
-getMLayer :: Gate -> Maybe Float
-getMLayer ( _ , (_,x,_,_,_) )
-  = x
-  
-getGateType :: Gate -> GateType
-getGateType ( _ , (x,_,_,_,_) )
-  = x
-    
+-- The transformations are made seqeuncially. 
+-- Look at each component for further understanding.
+
+labelGates :: [Exp] -> [Gate] -> [Gate]
+-- Pre: Exps. are sorted.
+labelGates [] gates 
+  = gates
+labelGates (e:exps) gates
+  = case e of 
+      BinApp ap _ _ -> labelGates exps ( addGate t gates )
+        where
+          t = fromJust ( lookup ap mapGateType )  
+      Not _         -> labelGates exps ( addGate I gates ) 
+      Id s          -> labelGates exps ( makeGate s S : gates )     
+
 getInputs :: [(Exp, Gate)] -> [(Exp, Gate)] -> [(Exp, Gate)]
--- pre: exps are sorted
+-- Pre: Exps. are sorted.
+-- Generates inputs for all gates.
 getInputs [] sn
   = reverse sn
 getInputs (l:lst) sn
@@ -164,7 +193,7 @@ getInputs (l:lst) sn
     lst' = (l:lst) ++ sn 
     
 getLines :: [(Exp, Gate)] -> [(Exp, Gate)]
--- generates the lines for all gates
+-- Generates the lines for all gates.
 getLines allList
   = zip exps newLst
   where
@@ -180,9 +209,13 @@ getLines allList
     -- helper function that counts the values on the same layer
       = length ( filter (\y -> getMLayer x == getMLayer y ) ls ) + 1
 
+-------------------------Export function--------------------------------
+------------------------------------------------------------------------
+
+-- Transforms the expression into a circuit defined as a set of gates. 
+
 getCircuit :: Exp -> [Gate]
--- gets the information of the circuit out of an expression
 getCircuit exp = ( snd . unzip . getLines ) mapExpGates
   where
-    mapExpGates = getInputs ( mapGates . eachTwoDNF $ exp ) []
+    mapExpGates = getInputs ( mapGates exp ) []
 
