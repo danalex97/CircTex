@@ -1,7 +1,7 @@
 # CircTex
 
+* CircTex creates a circuit for a given boolean expression with variable inputs. ( user named ) 
 * Intractive Haskell based command line application.
-* CircTex takes a boolean expression with variable inputs. ( user named ) 
 * Due to Haskell's versatility the code can be easily modified for different purposes.
 * Multiple useful functions are implemented, all being marked in the modules.
 
