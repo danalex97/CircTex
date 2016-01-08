@@ -29,7 +29,7 @@ def
  , identLetter     = alphaNum
  , opStart         = oneOf "!^+*"
  , opLetter        = oneOf "!^+*"
- , reservedOpNames = [ "!" , "+" , "*" , "^." , "^/" , "+/" , "*/" ]
+ , reservedOpNames = [ "!" , "+" , "*" , "^." , "^!" , "+!" , "*!" ]
  , reservedNames   = [ "T" , "F" , "U" ]
  }
                           
@@ -50,10 +50,10 @@ table
   = [ [ Prefix (m_reservedOp "!"  >> return (Not) ) ]
     , [ Infix  (m_reservedOp "*"  >> return (BinApp And) ) AssocLeft]
     , [ Infix  (m_reservedOp "+"  >> return (BinApp Or ) ) AssocLeft]
-    , [ Infix  (m_reservedOp "*/" >> return (BinApp Nand) ) AssocLeft]
-    , [ Infix  (m_reservedOp "+/" >> return (BinApp Nor ) ) AssocLeft]
+    , [ Infix  (m_reservedOp "*!" >> return (BinApp Nand) ) AssocLeft] -- issue -- to change in all files
+    , [ Infix  (m_reservedOp "+!" >> return (BinApp Nor ) ) AssocLeft] -- issue -- to change in all files
     , [ Infix  (m_reservedOp "^." >> return (BinApp Xor ) ) AssocLeft]
-    , [ Infix  (m_reservedOp "^/" >> return (BinApp Xnor) ) AssocLeft]
+    , [ Infix  (m_reservedOp "^!" >> return (BinApp Xnor) ) AssocLeft]
     ]
         
 term 

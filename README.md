@@ -13,10 +13,10 @@ Symbol precedence is from top to bottom. Parentheses are supported.
 * !  - logic not
 * *  - logic and
 * +  - logic or
-* */ - logic nand
-* +/ - logic nor
+* *! - logic nand
+* +! - logic nor
 * ^. - logic xor
-* ^/ - logic xnor
+* ^! - logic xnor
 
 Modules and extensions
 ======================

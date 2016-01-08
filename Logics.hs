@@ -16,7 +16,7 @@ import Data.List
 -- (+) , (*) :: a -> a -> a  
 
 class LogicOp a where
-  (^.) , (^/) , (+/) , (*/)  :: a -> a -> a  
+  (^.) , (^!) , (+!) , (*!)  :: a -> a -> a  
   (!) :: a -> a
 
 ------------------------Binary Applicators------------------------------
@@ -26,18 +26,18 @@ binApps
   = [ (Xor, "^.") 
     , (Or, "+")
     , (And, "*")
-    , (Nor, "*/")
-    , (Nand, "+/")
-    , (Xnor, "^/")
+    , (Nor, "*!")
+    , (Nand, "+!")
+    , (Xnor, "^!")
     ]
 
 binFunc 
   = [ (Xor, (^.) )
-    , (Xnor, (^/) )
+    , (Xnor, (^!) )
     , (Or, (+) )
-    , (Nor, (+/) )
+    , (Nor, (+!) )
     , (And, (*) ) 
-    , (Nand, (*/) )
+    , (Nand, (*!) )
     ]
     
 ------------------------Class Definitions-------------------------------
@@ -112,12 +112,12 @@ instance LogicOp State where
   T ^. F = T
   F ^. T = F
   _ ^. _ = F
-  x ^/ y = (!) ( x ^. y )
+  x ^! y = (!) ( x ^. y )
   (!) T  = F
   (!) F  = T
   (!) U  = U
-  x +/ y = (!) ( x + y )
-  x */ y = (!) ( x * y )
+  x +! y = (!) ( x + y )
+  x *! y = (!) ( x * y )
 
 --------------------Expression Class Instatiation-----------------------
 ------------------------------------------------------------------------
@@ -144,9 +144,9 @@ instance Num Exp where
  
 instance LogicOp Exp where
   (^.)  = BinApp Xor
-  (^/)  = BinApp Xnor
-  (+/)  = BinApp Nor
-  (*/)  = BinApp Nand
+  (^!)  = BinApp Xnor
+  (+!)  = BinApp Nor
+  (*!)  = BinApp Nand
   (!) x = Not x
 
 showExp :: Exp -> String
