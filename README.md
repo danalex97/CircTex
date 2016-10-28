@@ -54,3 +54,12 @@ Run from terminal:
 > ./Main.sh
 
 For quitting use Ctrl+C.
+
+Example
+=======
+
+```
+> ((a + !b) *! (!a +! b)) ^! ((a * c) ^. (d * c)) 
+```
+
+![](https://github.com/danalex97/CircTex/blob/master/circuit.png)
